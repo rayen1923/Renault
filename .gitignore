@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+build/
+
+# React
+.env
+.env.local
+
+# .NET
+bin/
+obj/
+
+# Docker
+*.log
+
+# VS
+.vs/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
