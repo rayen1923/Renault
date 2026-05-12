@@ -66,5 +66,17 @@ services:
     depends_on:
       - backend
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: renault_keycloak
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+
 volumes:
   mysql_data:

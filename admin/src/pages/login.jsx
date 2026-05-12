@@ -1,175 +1,141 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/api";
+import { useEffect, useRef, useState } from "react";
+
+import Keycloak from "keycloak-js";
+
 import renaultLogo from "../assets/renault.png";
 
+
+
+const keycloakConfig = {
+
+  url: "http://localhost:8081",
+
+  realm: "renault-realm",
+
+  clientId: "renault-client",
+
+};
+
+
+
+const keycloak = new Keycloak(keycloakConfig);
+
+
+
 export default function Login() {
-  const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const isInitialized = useRef(false); // Prevents double-init in React 19
 
-  const login = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const [error, setError] = useState(null);
 
-      const res = await api.post("/auth/login", {
-        email,
-        password,
+
+
+  useEffect(() => {
+
+    if (isInitialized.current) return;
+
+    isInitialized.current = true;
+
+
+
+    keycloak
+
+      .init({
+
+        onLoad: "check-sso",
+
+        silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+
+        pkceMethod: "S256"
+
+      })
+
+      .then((authenticated) => {
+
+        if (authenticated) {
+
+          localStorage.setItem("token", keycloak.token);
+
+          window.location.href = "/dashboard";
+
+        }
+
+      })
+
+      .catch((err) => {
+
+        console.error("Keycloak Init Error:", err);
+
+        setError("Impossible de contacter le serveur d'authentification.");
+
       });
 
-      localStorage.setItem("user", JSON.stringify(res.data));
+  }, []);
 
-      navigate("/dashboard");
-    } catch (err) {
-      setError("Email ou mot de passe invalide");
-    } finally {
-      setLoading(false);
-    }
+
+
+  const handleLogin = () => {
+
+    keycloak.login();
+
   };
 
+
+
+  if (error) return <div style={{ color: "red", padding: "20px" }}>{error}</div>;
+
+
+
   return (
+
     <div style={styles.page}>
+
       <div style={styles.topbar}>
+
         <div style={styles.brand}>AutoService</div>
 
-        <img
-          src={renaultLogo}
-          alt="Renault"
-          style={styles.logo}
-        />
+        <img src={renaultLogo} alt="Renault" style={styles.logo} />
+
       </div>
+
+
 
       <div style={styles.card}>
+
         <h1 style={styles.title}>Identification</h1>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
+        <button onClick={handleLogin} style={styles.button}>
 
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-        />
+          Se connecter avec Keycloak
 
-        {error && (
-          <div style={styles.error}>
-            {error}
-          </div>
-        )}
-
-        <button
-          onClick={login}
-          disabled={loading}
-          style={styles.button}
-        >
-          {loading ? "Chargement..." : "Se connecter"}
         </button>
+
       </div>
+
     </div>
+
   );
+
 }
 
+
+
+// Make sure these STYLES are defined or it will go white!
+
 const styles = {
-  page: {
-    width: "100%",
-    minHeight: "100vh",
-    backgroundColor: "#e5e5e7",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-    overflow: "hidden",
-    fontFamily: "Arial",
-    boxSizing: "border-box",
-  },
 
-  topbar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "60px",
-    backgroundColor: "#ff0000",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingLeft: "25px",
-    paddingRight: "25px",
-    boxSizing: "border-box",
-    zIndex: 10,
-  },
+  page: { display: "flex", flexDirection: "column", height: "100vh", alignItems: "center", backgroundColor: "#f4f4f4" },
 
-  brand: {
-    fontSize: "26px",
-    fontWeight: "bold",
-    color: "white",
-  },
+  topbar: { width: "100%", padding: "20px", display: "flex", justifyContent: "space-between", background: "#ff0000", color: "#fff", boxSizing: "border-box" },
 
-  logo: {
-    width: "30px",
-    height: "30px",
-    objectFit: "contain",
-  },
+  brand: { fontSize: "24px", fontWeight: "bold" },
 
-  card: {
-    width: "420px",
-    backgroundColor: "white",
-    borderRadius: "10px",
-    padding: "40px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "18px",
-    boxShadow: "0px 5px 20px rgba(0,0,0,0.15)",
-  },
+  logo: { height: "30px" },
 
-  title: {
-    textAlign: "center",
-    margin: 0,
-    marginBottom: "10px",
-    fontSize: "32px",
-    color: "#111",
-    fontWeight: "bold",
-  },
+  card: { padding: "40px", background: "white", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)", textAlign: "center", marginTop: "100px" },
 
-  input: {
-    height: "50px",
-    border: "1px solid #d5d5d5",
-    borderRadius: "5px",
-    paddingLeft: "15px",
-    fontSize: "16px",
-    outline: "none",
-    backgroundColor: "#f8f8f8",
-    boxSizing: "border-box",
-    width: "100%",
-    color: "#111",
-  },
+  title: { marginBottom: "20px" },
 
-  button: {
-    height: "50px",
-    backgroundColor: "#ff0000",
-    color: "white",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    width: "100%",
-  },
+  button: { padding: "10px 20px", backgroundColor: "#ff0000", border: "none", cursor: "pointer", fontWeight: "bold", borderRadius: "4px" }
 
-  error: {
-    color: "red",
-    textAlign: "center",
-    fontSize: "14px",
-  },
 };

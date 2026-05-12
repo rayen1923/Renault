@@ -11,9 +11,6 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<DbConnectionFactory>();
 
-builder.Services.AddScoped<IUserDao, UserDao>();
-builder.Services.AddScoped<UserService>();
-
 builder.Services.AddScoped<IAgencyDao, AgencyDao>();
 builder.Services.AddScoped<AgencyService>();
 
